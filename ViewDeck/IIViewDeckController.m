@@ -2823,12 +2823,12 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
     
     if (_viewFirstAppeared) {
         beforeBlock = ^{
-            [self notifyAppearanceForSide:side animated:NO from:2 to:1];
+            //[self notifyAppearanceForSide:side animated:NO from:2 to:1];
             [[self controllerForSide:side].view removeFromSuperview];
-            [self notifyAppearanceForSide:side animated:NO from:1 to:0];
+            //[self notifyAppearanceForSide:side animated:NO from:1 to:0];
         };
         afterBlock = ^(UIViewController* controller) {
-            [self notifyAppearanceForSide:side animated:NO from:0 to:1];
+            //[self notifyAppearanceForSide:side animated:NO from:0 to:1];
             [self hideAppropriateSideViews];
             controller.view.frame = self.referenceBounds;
             controller.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -2836,7 +2836,7 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
                 [self.referenceView insertSubview:controller.view belowSubview:self.slidingControllerView];
             else
                 [self.referenceView addSubview:controller.view];
-            [self notifyAppearanceForSide:side animated:NO from:1 to:2];
+            //[self notifyAppearanceForSide:side animated:NO from:1 to:2];
         };
     }
     
