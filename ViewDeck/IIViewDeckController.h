@@ -176,6 +176,7 @@ typedef void (^IIViewDeckControllerBounceBlock) (IIViewDeckController *controlle
 @property (nonatomic, assign) CGFloat parallaxAmount;
 @property (nonatomic, assign) CGFloat scaleAmount;
 @property (nonatomic, assign) CGFloat sideOffsetAmount;
+@property (nonatomic, assign) CGFloat alphaAmount;
 
 @property (nonatomic, strong) NSString *centerTapperAccessibilityLabel; // Voice over accessibility label for button to close side panel
 @property (nonatomic, strong) NSString *centerTapperAccessibilityHint;  // Voice over accessibility hint for button to close side panel

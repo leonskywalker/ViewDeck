@@ -142,7 +142,7 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
     NSTimeInterval animationDuration = pointsToAnimate / fabsf(velocity);
     // adjust duration for easing curve, if necessary
     if (DefaultSwipedAnimationCurve != UIViewAnimationOptionCurveLinear) animationDuration *= 1.25;
-    return animationDuration;
+    return animationDuration*1.25;
 }
 
 #define DEFAULT_DURATION 0.0
@@ -567,7 +567,15 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
     self.slidingControllerView.frame = [self slidingRectForOffset:_offset forOrientation:orientation];
     if (beforeOffset != _offset)
         [self notifyDidChangeOffset:_offset orientation:orientation panning:panning];
-        
+    
+//    if (panning == NO) {
+//        _offset = beforeOffset;
+//        [self setParallax];
+//        [self setScale];
+//        [self setSideOffset];
+//        _offset = offs
+//    }
+    
     [self setParallax];
     [self setScale];
     [self setSideOffset];
@@ -784,6 +792,7 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
 
 - (void)loadView
 {
+    [super loadView];
     _offset = 0;
     _viewFirstAppeared = NO;
     _viewAppeared = 0;
@@ -2392,9 +2401,11 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
 }
 
 - (void)panned:(UIPanGestureRecognizer*)panner orientation:(IIViewDeckOffsetOrientation)orientation {
+    //return [self isSideOpen:IIViewDeckLeftSide] || [self isSideOpen:IIViewDeckRightSide] || [self isSideOpen:IIViewDeckTopSide] || [self isSideOpen:IIViewDeckBottomSide];
     [self setParallax];
     [self setScale];
     [self setSideOffset];
+
     
     CGFloat pv, m;
     IIViewDeckSide minSide, maxSide;
@@ -2451,7 +2462,7 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
             openSide = maxSide;
         }
     }
-    
+           
     // Check for an in-flight bounce animation
     CAKeyframeAnimation *bounceAnimation = (CAKeyframeAnimation *)[self.slidingControllerView.layer animationForKey:@"previewBounceAnimation"];
     if (bounceAnimation != nil) {
@@ -2477,6 +2488,7 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
         CGFloat rm3 = (m-_ledge[maxSide]) / 3.0;
         CGPoint velocity = [panner velocityInView:self.referenceView];
         CGFloat orientationVelocity = orientation == IIViewDeckHorizontalOrientation ? velocity.x : velocity.y;
+        //TODO:调整灵敏度
         if (ABS(orientationVelocity) < 500) {
             // small velocity, no movement
             if (v >= m - _ledge[minSide] - lm3) {
@@ -2534,62 +2546,93 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
         return;
     }
     
-    /*
-    CGPoint center = self.leftController.view.center;
-    
-    
-    
-    //center.x = _offset + 320 - _sideOffsetAmount;
-    center.x = (_offset/320) * _sideOffsetAmount;
-    NSLog(@"_offset:%f",_offset);
-    NSLog(@"centerX:%f",center.x);
+    CGPoint center = self.leftController.view.center;   
+    center.x = MIN(160, (_offset/320) * _sideOffsetAmount -(_sideOffsetAmount-320) - 320/2);
     self.leftController.view.center = center;
-    */
     
-    /*
-    center.x = _offset - 320 - _sideOffsetAmount;
-    NSLog(@"_offset:%f",_offset);
-    NSLog(@"view:%@",self.leftController.view);
+    center = self.rightController.view.center;
+    center.x = MAX(160, (_offset/320) * _sideOffsetAmount +(_sideOffsetAmount-320) + 320/2 + 320);
     self.rightController.view.center = center;
+    //NSLog(@"right center:%f",center.x);
+    [self setAlpha];
+}
+
+-(void)setAlphaValue:(CGFloat)alphaValue forView:(UIView*)view{
+    if(alphaValue <0){
+        alphaValue = 0;
+    }else if (alphaValue>1){
+        alphaValue =1;
+    }
+#warning 动画时还是有小问题，因为会直接设置为0
+    /*
+    if (alphaValue<1) {
+        view.layer.shouldRasterize = YES;
+        view.layer.rasterizationScale = [[UIScreen mainScreen]scale];
+    }else{
+        view.layer.shouldRasterize = NO;
+        //NSLog(@"rasterzize off");
+        
+    }
      */
-   
+    view.alpha = alphaValue;
+}
+
+-(void)setAlpha{
+    if (_alphaAmount <=0) {
+        return;
+    }
+    CGFloat pv = self.slidingControllerView.frame.origin.x;
+    CGFloat diff = pv-(self.slidingControllerView.frame.size.width-_ledge[IIViewDeckLeftSide]);
+    CGFloat centerAlpha = 1 - (fabsf((diff+320)/320) * _alphaAmount);
+    
+    //NSLog(@"_offset:%f", _offset);
+    // NSLog(@"diff:%f", diff);
+    [self setAlphaValue:centerAlpha forView:self.centerController.view];
+    //self.centerController.view.layer.opacity = centerAlpha;
+        
+    CGFloat sideAlpha = _alphaAmount * fabsf(_offset/320) + (1 - _alphaAmount);
+    [self setAlphaValue:sideAlpha forView:self.leftController.view];
+    [self setAlphaValue:sideAlpha forView:self.rightController.view];
+    //self.leftController.view.layer.opacity = sideAlpha;
+    //self.rightController.view.layer.opacity = sideAlpha;
+    
+    CGFloat topAlpha = _alphaAmount * fabsf(_offset/([UIScreen mainScreen].bounds.size.height-20)) + (1 - _alphaAmount);
+    [self setAlphaValue:topAlpha forView:self.topController.view];
+    //NSLog(@"_offset:%f",_offset);
+    //NSLog(@"topAlpha:%f",topAlpha);
+    //self.topController.view.alpha = topAlpha;
 }
 
 -(void)setScale{
 
     if(_scaleAmount<=0 || _scaleAmount >=1) return;
-    NSLog(@"offset:%f",_offset);
+    //NSLog(@"offset:%f",_offset);
+    
     CGFloat pv = self.slidingControllerView.frame.origin.x;
     CGFloat diff = pv-(self.slidingControllerView.frame.size.width-_ledge[IIViewDeckLeftSide]);
     
-    CGFloat centerScale = 1 - _scaleAmount* fabsf(_offset)/320 ;
+    CGFloat centerScale = 1 - _scaleAmount* fabsf(diff+320)/320 ;
        
     CGAffineTransform centerTransform = CGAffineTransformMakeScale(centerScale, centerScale);
     self.centerController.view.transform = centerTransform;
     //NSLog(@"center:%f",centerScale);
     
+    centerScale = 1 - _scaleAmount* fabsf(_offset)/320 ;
     CGFloat sideScale = (2-_scaleAmount)-centerScale;
     
-        //NSLog(@"offset:%f",_offset);
     //TODO:这里有一个嵌套的问题，先不放大
     if (sideScale <=1) {
         CGAffineTransform sideTransform = CGAffineTransformMakeScale(sideScale, sideScale);
-        if(!self.leftController.view.hidden)self.leftController.view.transform = sideTransform;
-        if(!self.rightController.view.hidden)self.rightController.view.transform = sideTransform;
-
-    }else{
-        NSLog(@"");
+        [(UIView*)self.leftController.view setTransform:sideTransform];
+        self.rightController.view.transform = sideTransform;
     }
         
     
     CGFloat topScale = (2-_scaleAmount) - ( 1 - _scaleAmount* fabsf(_offset)/ ([UIScreen mainScreen].bounds.size.height - 20) );
-    NSLog(@"topscale:%f",topScale);
+    //NSLog(@"topscale:%f",topScale);
     CGAffineTransform topTransform = CGAffineTransformMakeScale(topScale, topScale);
-    if(!self.topController.view.hidden)self.topController.view.transform = topTransform;
-    //NSLog(@"side:%f",sideScale);
-    //NSLog(@"frame:%@",self.leftController.view);
-    //
-    //self.container.transform = tr;
+    self.topController.view.transform = topTransform;
+
 }
 
 - (void) setParallax {
