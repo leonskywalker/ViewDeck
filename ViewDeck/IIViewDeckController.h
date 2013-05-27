@@ -283,6 +283,7 @@ typedef void (^IIViewDeckControllerBounceBlock) (IIViewDeckController *controlle
 
 - (IIViewDeckSide)sideForController:(UIViewController*)controller;
 
+- (UIViewController*)controllerForSide:(IIViewDeckSide)viewDeckSide;
 @end
 
 

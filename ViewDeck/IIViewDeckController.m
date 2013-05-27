@@ -2501,6 +2501,12 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
                 [self closeOpenView];
         }
         else if (orientationVelocity != 0.0f) {
+            
+            //max velocity
+            if (ABS(orientationVelocity) > 1500) {
+                orientationVelocity = orientationVelocity>0?1500:-1500;
+            }
+            
             if (orientationVelocity < 0) {
                 // swipe to the left
                 // Animation duration based on velocity
@@ -2520,7 +2526,8 @@ static NSTimeInterval durationToAnimate(CGFloat pointsToAnimate, CGFloat velocit
                 
                 // Animation duration based on velocity
                 CGFloat maxDistance = CGRectGetWidth(self.view.frame) - self.leftSize;
-                CGFloat pointsToAnimate = fabsf(maxDistance - self.slidingControllerView.frame.origin.x);
+                //CGFloat pointsToAnimate = fabsf(maxDistance - self.slidingControllerView.frame.origin.x);
+                CGFloat pointsToAnimate = fabsf(self.slidingControllerView.frame.origin.x);
                 NSTimeInterval animationDuration = durationToAnimate(pointsToAnimate, orientationVelocity);
                 
                 if (v > 0) {
